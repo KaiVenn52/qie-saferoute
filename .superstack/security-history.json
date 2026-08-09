@@ -1,0 +1,13 @@
+{
+  "project": "qie-saferoute",
+  "audits": [
+    {
+      "date": "2026-08-10",
+      "result": "pass-testnet-mvp",
+      "tests": 8,
+      "dependency_vulnerabilities": 0,
+      "mainnet_approved": false,
+      "report": ".superstack/security-reports/qie-saferoute-2026-08-10.md"
+    }
+  ]
+}

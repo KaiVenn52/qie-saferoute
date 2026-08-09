@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QIE SafeRoute — Hackathon submission package</title>
+  <style>
+    :root{font-family:Inter,Arial,sans-serif;color:#10251f;background:#f7f4ec}body{max-width:920px;margin:0 auto;padding:48px 24px;line-height:1.55}h1{font-size:48px;margin-bottom:4px}h2{margin-top:40px}.tag{display:inline-block;background:#b8f35a;padding:5px 12px;border-radius:999px;font-weight:700}section{background:#fff;border:1px solid #ced8d2;border-radius:18px;padding:24px;margin:18px 0}code{word-break:break-all}a{color:#0d4939}.warn{background:#fff4d8}
+  </style>
+</head>
+<body>
+  <span class="tag">Infrastructure</span>
+  <h1>QIE SafeRoute</h1>
+  <p>Verify the route. Then pay.</p>
+
+  <section>
+    <h2>Links</h2>
+    <p>Repository: <a href="https://github.com/kangming0602/qie-saferoute">github.com/kangming0602/qie-saferoute</a></p>
+    <p>Live demo: <a href="https://kangming0602.github.io/qie-saferoute/">kangming0602.github.io/qie-saferoute</a></p>
+    <p>Product video: pending owner-recorded public URL.</p>
+  </section>
+
+  <section>
+    <h2>One-liner</h2>
+    <p>A non-custodial payment preflight that resolves QIE's 0x and qie1 account representations and verifies a short-lived EIP-712 wallet-control proof before funds move.</p>
+  </section>
+
+  <section>
+    <h2>Problem and differentiation</h2>
+    <p>QIE's dual address representation creates a practical integration risk for wallets, exchanges, bridges, and payment apps: a valid-looking value may be the wrong representation for a destination field, while a copied address pair does not prove recipient control. SafeRoute combines deterministic QIE-specific address resolution and a constrained portable proof in one preflight flow. It is not another wallet, checkout clone, identity score, or custody layer.</p>
+  </section>
+
+  <section>
+    <h2>QIE integration</h2>
+    <ul>
+      <li>QIE EVM 0x ↔ qie1 bech32 conversion and validation.</li>
+      <li>QIE Testnet chain ID 1983 wallet switching and EIP-712 domain.</li>
+      <li>Public QIE genesis account used as a reproducible test vector.</li>
+      <li>Optional Solidity registry for proof-hash anchoring and revocation.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>MVP evidence</h2>
+    <p>Working responsive React/TypeScript app; local dual-address resolution; wallet-signed proof creation; offline JSON/QR verification; malformed-input and expiry handling; eight passing automated tests; successful lint and production build; zero npm audit findings.</p>
+  </section>
+
+  <section>
+    <h2>90-day traction milestones</h2>
+    <ol>
+      <li>Ship integration examples and recruit three QIE wallet/exchange/payment design partners.</li>
+      <li>Reach 2,000 route checks across retained pilots.</li>
+      <li>Keep median integration time below 30 minutes and convert three pilots into retained integrations.</li>
+    </ol>
+    <p>These are forward targets, not current traction claims.</p>
+  </section>
+
+  <section class="warn">
+    <h2>Deployment disclosure</h2>
+    <p>The app is a public testnet MVP. The optional registry source is included and compiles, but no contract has been deployed to mainnet. Mainnet deployment requires separate owner authorization and security review.</p>
+  </section>
+</body>
+</html>
