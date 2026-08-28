@@ -4,11 +4,11 @@ Target length: 60–90 seconds. Record at 16:9, 1080p if possible. Keep the curs
 
 ## Recording sequence
 
-1. **Opening (0–10s)** — Show the top of the live demo. Say: “QIE exposes one account in both 0x and qie1 formats. SafeRoute checks the route and proves recipient wallet control before funds move.”
-2. **Resolve (10–25s)** — Leave the public genesis address in the input and click **Run safety check**. Point to the resolved EVM and QIE addresses. Say: “Paste either format; the corresponding representation is derived locally.”
-3. **Control proof (25–50s)** — Click **Create signed proof** and sign the message with a QIE Testnet wallet. This is a message signature, not a transaction. If signing is unavailable, switch to **Verify proof**, paste the bundled demo proof, and click **Verify signature**. Say: “The verifier checks the address pair, signer, chain ID, nonce, lifetime, and expiry. JSON or QR proofs can be verified offline.”
-4. **Boundary (50–70s)** — Scroll to **Integration API**. Say: “SafeRoute is a narrow developer primitive for wallet send screens, exchange deposits, and merchant checkout. It never takes custody and does not claim that address control proves identity, reputation, or transaction safety.”
-5. **Close (70–80s)** — Return to the result. Say: “QIE SafeRoute. Verify the route. Then pay.” Hold on the live demo and repository URLs for three seconds.
+1. **Opening (0–10s)** — Show the top of the live demo. Say: “QIE exposes one account in both 0x and qie1 formats. SafeRoute binds that route to the exact payment intent before funds move.”
+2. **Build the context (10–30s)** — Show the prefilled recipient, amount, asset, order reference, verifier and checkout flow. Click **Preview payment intent**. Say: “The merchant does not ask a user to sign a vague message. Every important payment field is visible first and covered by one typed request.”
+3. **Recipient proof (30–55s)** — Click **Sign as recipient** and sign with a QIE wallet. This is a message signature, not a transaction. If signing is unavailable, switch to **Verify intent** and paste a previously captured demo intent. Say: “The verifier checks the address pair, signer, chain, asset, amount, order, audience, nonce and expiry. JSON or QR payloads can be verified offline.”
+4. **Integration (55–75s)** — Scroll to the merchant workflow and **Installable SDK** section. Say: “A wallet, exchange, bridge or merchant calls the verifier before showing its own payment action. SafeRoute never takes custody and does not claim identity, delivery or payment finality.”
+5. **Close (75–90s)** — Return to the verified intent. Say: “QIE SafeRoute. Match the intent. Then pay.” Hold on the live demo and repository URLs for three seconds.
 
 ## Upload
 

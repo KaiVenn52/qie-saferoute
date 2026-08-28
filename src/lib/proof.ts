@@ -1,7 +1,8 @@
 import { verifyTypedData } from 'viem'
-import { evmToQie } from './address'
+import { evmToQie } from './address.js'
+import { QIE_TESTNET_CHAIN_ID } from './networks.js'
 
-export const QIE_TESTNET_CHAIN_ID = 1983
+export { QIE_TESTNET_CHAIN_ID } from './networks'
 const MAX_PROOF_BYTES = 16_384
 const MAX_PROOF_LIFETIME_SECONDS = 7 * 24 * 60 * 60
 

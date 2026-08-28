@@ -6,7 +6,7 @@ QIE SafeRoute
 
 ## One-liner
 
-A non-custodial payment preflight SDK that resolves QIE's 0x/qie1 address pair and verifies recipient wallet control before funds move.
+A non-custodial payment-intent preflight SDK that binds QIE's 0x/qie1 route, payment context and recipient wallet control before funds move.
 
 ## Problem
 
@@ -18,29 +18,31 @@ SafeRoute gives any QIE application one preflight step:
 
 1. validate either address format locally;
 2. resolve the matching dual representation;
-3. optionally verify a short-lived EIP-712 proof signed by the recipient;
-4. share or embed the result as JSON/QR without holding funds.
+3. sign a short-lived EIP-712 Payment Intent covering network, asset, amount, order, verifier and destination;
+4. verify the exact context locally or on a server before the host app shows its own payment action;
+5. share or embed the result as JSON/QR without holding funds.
 
 ## QIE integration points
 
-- QIE Testnet chain ID 1983 and official testnet RPC metadata
+- QIE Testnet chain ID 1983 and Mainnet chain ID 1990 metadata
 - QIE bech32 `qie` account prefix
 - Ethermint/EVM 20-byte account representation
 - injected QIE Wallet/MetaMask EIP-712 signing
-- optional Solidity proof-hash registry deployable to QIE Testnet
+- optional Solidity PaymentIntentRegistry anchor/revoke contract
 
 ## What is working
 
 - responsive reference web app
 - tested 0x ↔ qie1 resolver using a public QIE genesis account
 - wallet-connect and QIE Testnet switch flow
-- signed 24-hour control proof
+- context-bound 30-minute Payment Intent proof
 - local proof verification and QR/JSON sharing
-- non-custodial registry contract source
+- tested non-custodial registry contract source
+- publish-ready TypeScript SDK output with declaration files
 
 ## Differentiation
 
-SafeRoute is not a wallet, checkout, invoice system, transaction simulator, or identity/KYC product. It is a QIE-native integration safety primitive focused on the chain's dual-address edge case and payment proof workflow.
+SafeRoute is not a wallet, payment processor, invoice system, transaction simulator, or identity/KYC product. It is a QIE-native integration primitive that makes the exact payment context machine-verifiable before a host application pays.
 
 ## Business and traction
 
@@ -48,11 +50,11 @@ The open-source SDK targets wallets, exchanges, bridges, and merchant payment ap
 
 ## Security statement
 
-SafeRoute never requests a private key, never moves funds, and never claims a recipient is trustworthy. A valid proof only establishes control of the stated address pair during the proof lifetime. The MVP is testnet-first; no mainnet deployment or spend has been performed.
+SafeRoute never requests a private key, never moves funds, and never claims a recipient is trustworthy. A valid intent establishes control of the stated address pair and agreement with the signed payment context during the proof lifetime. No mainnet deployment or spend has been performed.
 
 ## Demo flow
 
-Paste either a QIE `0x…` or `qie1…` address → resolve both representations → connect the recipient wallet → sign a 24-hour proof → copy the QR/JSON → verify it in the second tab.
+Enter a QIE `0x…` or `qie1…` recipient, amount, asset and order → preview the complete intent → connect the recipient wallet → sign → copy the QR/JSON → verify it in the second tab.
 
 ## Requested milestone framing
 

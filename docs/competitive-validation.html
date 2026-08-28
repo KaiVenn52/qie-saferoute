@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QIE SafeRoute 竞争与需求复核</title><style>body{font-family:Arial,sans-serif;max-width:980px;margin:0 auto;padding:42px 22px;line-height:1.65;color:#10251f;background:#f7f4ec}section{background:white;border:1px solid #cdd8d2;border-radius:16px;padding:22px;margin:16px 0}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;border-bottom:1px solid #dde4df;padding:10px}.tag{display:inline-block;padding:5px 10px;border-radius:999px;background:#b8f35a;font-weight:700}.warn{background:#fff4d8}.bad{background:#ffe7e1}a{color:#0d4939}</style></head>
+<body>
+<span class="tag">2026-08-10 evidence review</span>
+<h1>QIE SafeRoute：不是明显复制，但必须加强产品楔子</h1>
+<section><h2>结论</h2><p><strong>公开直接竞品：未发现。</strong>在检索到的 QIE 官方仓库和公开黑客松项目中，没有发现同时提供 QIE 0x/qie1 双向解析、受限 EIP-712 控制证明、离线 JSON/QR 验证的产品。但这不等于法律意义或全球范围的“绝对首创”；私有仓库、未索引项目和未公开提交无法排除。</p><p><strong>建议：Pivot / 有条件继续。</strong>保留已经实现的安全内核，但不要只以“地址转换网页”参赛。应定位成可嵌入钱包、交易所充值页和商户结账页的 <em>QIE Payment Intent Preflight SDK</em>。</p></section>
+<section><h2>竞争矩阵</h2><table><tr><th>类别</th><th>证据</th><th>与 SafeRoute 的关系</th></tr>
+<tr><td>QIE 直接竞品</td><td>对公开 QIE 项目与 GitHub 关键词检索未发现相同组合；空仓库 q-chain-verify 不构成产品。</td><td>公开空间稀疏，但搜索不可能证明绝对不存在。</td></tr>
+<tr><td>QIE 邻近项目</td><td>QIEPay、QIE MerchantPay、RemitChain、Leash、QIE Lens、TrustPass。</td><td>它们做支付、汇款、代理钱包、浏览器或身份；不是双地址预检。支付项目可成为集成对象。</td></tr>
+<tr><td>地址转换替代品</td><td>Cosmos EVM Bech32 precompile、Injective SDK、Initia/XRP EVM 文档、Zilliqa 地址转换器。</td><td>证明转换本身是成熟通用能力，不能作为主要创新点。</td></tr>
+<tr><td>钱包控制证明替代品</td><td>Mesh Verify、Iron、PayPal 自托管钱包签名说明、通用 SIWE/EIP-712。</td><td>证明控制权有商业用途，但单独的消息签名也不是新技术。</td></tr>
+<tr><td>非加密替代品</td><td>交易所人工白名单、地址簿、测试小额转账、客服确认。</td><td>慢、不可移植，但用户已经有工作流，SafeRoute 必须显著降低集成成本。</td></tr></table></section>
+<section><h2>需求证据</h2><ul><li>QIE 官方文档确认“单一私钥、两种钱包格式”，0x 用于 EVM，QIE 原生格式用于原生功能。这证明技术前提真实。</li><li>Cosmos EVM 官方文档专门提供地址转换预编译，并警告派生配置错误会导致账户与余额难以关联。这证明双栈地址处理属于真实工程问题。</li><li>Evmos 与 Injective 的公开用户案例反复出现“外部钱包不接受地址”“0x 与 bech32 网络/格式混淆”等问题。这是跨生态的真实行为证据，但不能自动等同于 QIE 当前需求。</li><li>QIE 生态已有多个支付、汇款和钱包项目，说明存在潜在集成面；尚无证据表明这些团队愿意集成 SafeRoute。</li></ul><p><strong>需求评分：1.5/3（弱到中等）。</strong>有真实结构性问题和邻近用户，但缺少 QIE 团队访谈、集成承诺、使用数据或公开 issue。</p></section>
+<section class="warn"><h2>当前版本的主要风险</h2><ol><li>转换逻辑可被几十行成熟库替代，独立网页容易被评为“太简单”。</li><li>控制证明目前证明地址控制，但没有绑定具体金额、代币、订单、请求方或付款上下文，实际支付价值不够强。</li><li>它不需要主网交易即可工作，与 Hackathon 3.0 的“Mainnet only / traction”叙事存在适配风险。</li><li>没有真实集成或用户反馈，不能声称已经实现产品市场验证。</li></ol></section>
+<section><h2>推荐调整</h2><p>升级为 <strong>QIE Payment Intent Preflight SDK</strong>：在现有地址对与签名基础上，将证明绑定到付款意图，包括收款账户、链 ID、金额、代币、订单号、请求方/audience、目的地址类型和过期时间；提供可嵌入组件与服务端验证器，并把 Demo 放进真实的商户结账或交易所充值流程。</p><p>最低验证门槛：联系 5 个 QIE 钱包/支付/交易所项目，获得至少 2 次具体问题访谈和 1 个愿意试集成的团队。达不到就停止继续扩建，只把当前成果作为开源工具提交。</p></section>
+<section><h2>来源</h2><ul><li><a href="https://docs.qie.digital/what-is-qie/qie-v3-key-features">QIE V3 key features</a></li><li><a href="https://cosmos-docs.mintlify.app/evm/latest/documentation/smart-contracts/precompiles/bech32">Cosmos EVM Bech32 precompile</a></li><li><a href="https://docs.injective.network/developers/convert-addresses">Injective address conversion</a></li><li><a href="https://www.meshpay.com/products/mesh-verify">Mesh wallet ownership verification</a></li><li><a href="https://github.com/ulsreall/qie-pay">QIEPay</a>, <a href="https://github.com/teethaking/QIE-MerchantPay">QIE MerchantPay</a>, <a href="https://github.com/UjjwalCodes01/RemitChain">RemitChain</a></li></ul></section>
+</body></html>

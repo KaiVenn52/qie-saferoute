@@ -1,20 +1,23 @@
 # QIE SafeRoute
 
-QIE SafeRoute is a non-custodial payment preflight and developer tool for QIE's dual account representation. It resolves an EVM `0x…` address and its QIE `qie1…` bech32 representation, then lets the recipient sign a short-lived EIP-712 proof of control.
+QIE SafeRoute is a non-custodial payment-intent preflight SDK for QIE wallet, exchange-deposit, bridge and merchant-checkout flows.
 
-It does **not** claim that a recipient is honest, simulate a payment, hold funds, or expose a send button. The promise is deliberately narrow: correct encoding, deterministic representation, and cryptographic control proof.
+It resolves QIE's two account representations (`0x…` and `qie1…`) and lets the recipient sign a short-lived EIP-712 Payment Intent. The signature covers the route, network, asset, amount, order reference, intended verifier, destination type and purpose. An integrator can then fail closed if any of those fields changes before payment.
 
-## MVP
+SafeRoute does **not** claim that a recipient is honest, simulate a payment, hold funds, or expose a send button. A valid intent proves control of the stated address pair and agreement with the signed payment context for its lifetime.
 
-- 0x ↔ qie1 local conversion and validation
-- QIE genesis-account test vector
-- injected-wallet connection on QIE Testnet (chain ID 1983)
-- 24-hour EIP-712 route proof
-- offline proof verification and QR payload
-- optional non-custodial proof-hash registry contract
-- responsive, accessible single-screen workflow
+## Product surface
 
-## Run
+- local 0x ↔ qie1 conversion and validation
+- QIE Testnet (1983) and Mainnet (1990) network metadata
+- typed Payment Intent v2 creation and verification
+- context binding for amount, asset, order, audience and destination
+- offline JSON / URL-safe / QR sharing
+- installable TypeScript SDK build (`qie-saferoute-sdk`)
+- optional non-custodial `PaymentIntentRegistry` anchor and revoke contract
+- responsive reference checkout flow with no custody or transfer call
+
+## Run locally
 
 ```bash
 npm install
@@ -24,18 +27,37 @@ npm run dev
 Quality checks:
 
 ```bash
-npm test
 npm run lint
+npm test
+npm run contracts:test
 npm run build
+npm pack --dry-run
 ```
 
-## Safety boundary
+`npm run build` produces both the Vite app and declaration-rich SDK output in `dist-sdk/`. The package is publish-ready but has not been published to npm.
 
-- Testnet is configured by default.
-- No deploy script, private key, transfer call, or mainnet RPC is included.
-- The Solidity registry stores only a proof hash, expiry, and revocation bit; it cannot receive or move user funds.
-- Mainnet deployment requires a separate review and explicit approval.
+## Contract
 
-See [product decision](docs/product-decision.md), [submission draft](docs/hackathon-submission.md), and the [UI concept](docs/ui-concept.png).
+[`contracts/PaymentIntentRegistry.sol`](contracts/PaymentIntentRegistry.sol) stores only an intent digest, expiry and revocation bit. It cannot receive or move user funds. Compile and test it locally with:
 
-Live demo: <https://kangming0602.github.io/qie-saferoute/>
+```bash
+npm run contracts:compile
+npm run contracts:test
+```
+
+No mainnet deployment or production transaction has been performed. A mainnet address must not be invented; deployment requires an explicit network, security and cost review.
+
+## Security boundary
+
+- Private keys never enter SafeRoute.
+- Signing is an explicit wallet action and creates no payment.
+- Verification is deterministic and can run offline.
+- Proof lifetimes are capped at seven days; the reference UI uses 30 minutes.
+- Integrators should pass `expectedAudience` and `expectedReference` to prevent an otherwise valid intent being reused in another checkout.
+- See [`docs/threat-model.md`](docs/threat-model.md) for assumptions and non-goals.
+
+## Integration
+
+See [`docs/sdk-integration.md`](docs/sdk-integration.md) for the browser/server verifier flow and [`docs/hackathon-submission.md`](docs/hackathon-submission.md) for the competition framing.
+
+Reference UI: <https://kangming0602.github.io/qie-saferoute/> (deployment status must be checked before sharing or submitting).

@@ -2,7 +2,7 @@
 
 ## Decision
 
-Build a QIE-specific dual-address payment preflight SDK, not another payment link, wallet, invoice app, RPC fallback, or transaction simulator.
+Build a QIE-specific Payment Intent preflight SDK, not another payment link, wallet, invoice app, RPC fallback, or transaction simulator.
 
 The product's first customer is a developer integrating QIE into a wallet send screen, exchange deposit flow, or merchant checkout. The standalone UI is the reference implementation and verifier.
 
@@ -10,7 +10,7 @@ The product's first customer is a developer integrating QIE into a wallet send s
 
 QIE combines EVM and Cosmos surfaces. Its public chain registry declares the `qie` bech32 prefix, `ethsecp256k1`, coin type 60, Ethermint codecs, and both EVM and Cosmos APIs. Its public genesis uses Ethermint `EthAccount` records with `qie1…` account addresses. QIE's faucet, meanwhile, asks for a `0x…` wallet address. That split creates a concrete integration and support risk: software and users need to know which representation a field expects and whether both values belong to the same account.
 
-SafeRoute resolves the two encodings and adds a signed, short-lived proof that the recipient controls the EVM account. This is useful before a payment without becoming a custodian or payment processor.
+SafeRoute resolves the two encodings and adds a signed, short-lived intent that binds the recipient, amount, asset, order, audience, destination and purpose. This is useful before a payment without becoming a custodian or payment processor.
 
 ## Originality check
 
@@ -47,10 +47,10 @@ QIE publicly positions itself around payments, identity, EVM/Cosmos compatibilit
 - local format and checksum validation
 - deterministic 0x/qie1 representation
 - QIE Testnet wallet connection
-- 24-hour EIP-712 control proof
+- 30-minute EIP-712 Payment Intent proof bound to amount, asset, order, audience and destination
 - proof QR/JSON share and offline verification
 - TypeScript reference functions
-- optional testnet-only proof-hash registry
+- optional PaymentIntentRegistry anchor/revoke contract with local tests
 
 ### Explicitly out of scope
 
