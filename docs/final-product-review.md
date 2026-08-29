@@ -1,4 +1,4 @@
-# Final product review — 2026-08-10
+# Final product review — 2026-08-29
 
 ## Decision
 
@@ -14,7 +14,7 @@ Proceed as a focused Developer Infrastructure & Tooling submission. The product 
 | Trust and safety | 9/10 | No custody or send action; limitations are stated next to the workflow. |
 | Mobile/responsive | 8/10 | Verified at desktop and mobile viewports. |
 | Accessibility | 8/10 | Semantic controls, labels, focus states, contrast, and status text are present. |
-| Completeness | 8/10 | Working app, tests, documentation, optional contract, and public deployment path. Manual demo video remains a submission dependency. |
+| Completeness | 8/10 | Working app, tests, SDK, canonical registry integration, and guarded deployment path. Live mainnet evidence and the manual demo video remain submission dependencies. |
 
 ## Market position
 
@@ -24,4 +24,4 @@ The closest substitutes are generic EVM address validators, wallet message signi
 
 ## Stop conditions
 
-Do not broaden the MVP into identity scoring, fraud guarantees, custody, automatic payments, or an unsupported “safe to pay” claim. Do not deploy the optional registry to mainnet until the competition explicitly confirms the requirement and a separate deployment/security review is approved.
+Do not broaden the MVP into identity scoring, fraud guarantees, custody, automatic payments, or an unsupported “safe to pay” claim. The final entry must use QIE Mainnet, but deployment remains a separate irreversible step after the deployer, balance, gas estimate, source, and public frontend are reviewed.

@@ -6,6 +6,7 @@ import { QIE_TESTNET_CHAIN_ID } from './networks'
 import {
   decodePaymentIntent,
   encodePaymentIntent,
+  hashPaymentIntent,
   paymentIntentDomain,
   paymentIntentMessage,
   paymentIntentTypes,
@@ -79,5 +80,25 @@ describe('QIE payment intent', () => {
   it('round-trips a portable URL-safe payload', async () => {
     const intent = await makeIntent()
     expect(decodePaymentIntent(encodePaymentIntent(intent))).toEqual(intent)
+  })
+
+  it('round-trips Unicode references and purposes', async () => {
+    const intent = { ...await makeIntent(), reference: '订单-2048', purpose: '咖啡设备订单' }
+    const signature = await recipient.signTypedData({
+      domain: paymentIntentDomain(intent.chainId),
+      types: paymentIntentTypes,
+      primaryType: 'PaymentIntent',
+      message: paymentIntentMessage(intent),
+    })
+    const signed = { ...intent, signature }
+    expect(decodePaymentIntent(encodePaymentIntent(signed))).toEqual(signed)
+    expect((await verifyPaymentIntent(signed)).valid).toBe(true)
+  })
+
+  it('creates the canonical EIP-712 registry digest', async () => {
+    const intent = await makeIntent()
+    expect(hashPaymentIntent(intent)).toMatch(/^0x[0-9a-f]{64}$/)
+    expect(hashPaymentIntent({ ...intent, amount: parseUnits('13', 18).toString() }))
+      .not.toBe(hashPaymentIntent(intent))
   })
 })

@@ -12,5 +12,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/sdk/**/*.ts", "src/lib/address.ts", "src/lib/networks.ts", "src/lib/paymentIntent.ts"]
+  "include": ["src/sdk/**/*.ts", "src/lib/address.ts", "src/lib/networks.ts", "src/lib/paymentIntent.ts", "src/lib/registry.ts"]
 }

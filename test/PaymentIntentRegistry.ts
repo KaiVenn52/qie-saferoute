@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { keccak256, stringToHex } from 'viem'
+import { keccak256, stringToHex, zeroAddress } from 'viem'
 import { network } from 'hardhat'
+import { evmToQie } from '../src/lib/address.js'
+import { hashPaymentIntent } from '../src/lib/paymentIntent.js'
 
 describe('PaymentIntentRegistry', async () => {
   const { viem } = await network.create()
@@ -10,9 +12,24 @@ describe('PaymentIntentRegistry', async () => {
 
   it('anchors and revokes an intent for its signer', async () => {
     const registry = await viem.deployContract('PaymentIntentRegistry')
-    const intentHash = keccak256(stringToHex('ORDER-2048'))
     const block = await publicClient.getBlock()
     const expiresAt = block.timestamp + 3600n
+    const intentHash = hashPaymentIntent({
+      chainId: 1983,
+      recipientEvm: signer.account.address,
+      recipientQie: evmToQie(signer.account.address),
+      asset: zeroAddress,
+      assetSymbol: 'QIE',
+      amount: '12500000000000000000',
+      decimals: 18,
+      reference: 'ORDER-2048',
+      audience: outsider.account.address,
+      destinationType: 'merchant_checkout',
+      purpose: 'Coffee equipment order',
+      issuedAt: Number(block.timestamp),
+      expiresAt: Number(expiresAt),
+      nonce: `0x${'ab'.repeat(32)}`,
+    })
 
     await registry.write.anchor([intentHash, expiresAt], { account: signer.account })
     assert.equal(await registry.read.isActive([signer.account.address, intentHash]), true)

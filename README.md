@@ -14,7 +14,7 @@ SafeRoute does **not** claim that a recipient is honest, simulate a payment, hol
 - context binding for amount, asset, order, audience and destination
 - offline JSON / URL-safe / QR sharing
 - installable TypeScript SDK build (`qie-saferoute-sdk`)
-- optional non-custodial `PaymentIntentRegistry` anchor and revoke contract
+- canonical EIP-712 digest plus non-custodial `PaymentIntentRegistry` anchor/revoke contract
 - responsive reference checkout flow with no custody or transfer call
 
 ## Run locally
@@ -45,7 +45,7 @@ npm run contracts:compile
 npm run contracts:test
 ```
 
-No mainnet deployment or production transaction has been performed. A mainnet address must not be invented; deployment requires an explicit network, security and cost review.
+The hackathon requires a QIE Mainnet deployment for final eligibility. No mainnet deployment or production transaction has been performed yet, and no address is claimed. The deployment runner is dry-run-only by default and prints the exact account balance, gas estimate and estimated fee before any broadcast. See [`docs/deployment.md`](docs/deployment.md).
 
 ## Security boundary
 
@@ -60,4 +60,4 @@ No mainnet deployment or production transaction has been performed. A mainnet ad
 
 See [`docs/sdk-integration.md`](docs/sdk-integration.md) for the browser/server verifier flow and [`docs/hackathon-submission.md`](docs/hackathon-submission.md) for the competition framing.
 
-Reference UI: <https://kangming0602.github.io/qie-saferoute/> (deployment status must be checked before sharing or submitting).
+Planned reference UI: <https://kangming0602.github.io/qie-saferoute/> (it must be opened in a private window and verified live before submission).

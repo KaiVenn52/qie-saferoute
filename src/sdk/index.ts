@@ -3,12 +3,18 @@ export {
   decodePaymentIntent,
   destinationTypes,
   encodePaymentIntent,
+  hashPaymentIntent,
   NATIVE_ASSET_ADDRESS,
   paymentIntentDomain,
   paymentIntentMessage,
   paymentIntentTypes,
   verifyPaymentIntent,
 } from '../lib/paymentIntent.js'
+export {
+  paymentIntentAnchorArguments,
+  paymentIntentRegistryAbi,
+  paymentIntentRegistryKey,
+} from '../lib/registry.js'
 export type {
   DestinationType,
   PaymentIntentProof,

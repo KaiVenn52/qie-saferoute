@@ -1,8 +1,9 @@
-import { getAddress, isAddress, verifyTypedData, zeroAddress } from 'viem'
+import { getAddress, hashTypedData, isAddress, verifyTypedData, zeroAddress } from 'viem'
 import { evmToQie } from './address.js'
 import { isQieChainId, type QieChainId } from './networks.js'
 
 const MAX_PAYLOAD_BYTES = 24_576
+const MAX_ENCODED_PAYLOAD_LENGTH = Math.ceil(MAX_PAYLOAD_BYTES / 3) * 4
 const MAX_INTENT_LIFETIME_SECONDS = 7 * 24 * 60 * 60
 const MAX_CLOCK_SKEW_SECONDS = 5 * 60
 const MAX_REFERENCE_LENGTH = 96
@@ -69,6 +70,15 @@ export function paymentIntentMessage(intent: UnsignedPaymentIntent) {
     issuedAt: BigInt(intent.issuedAt),
     expiresAt: BigInt(intent.expiresAt),
   }
+}
+
+export function hashPaymentIntent(intent: UnsignedPaymentIntent & { chainId: QieChainId }): `0x${string}` {
+  return hashTypedData({
+    domain: paymentIntentDomain(intent.chainId),
+    types: paymentIntentTypes,
+    primaryType: 'PaymentIntent',
+    message: paymentIntentMessage(intent),
+  })
 }
 
 function validateShape(intent: PaymentIntentProof, now: number): PaymentIntentValidation {
@@ -142,14 +152,22 @@ export async function verifyPaymentIntent(
 }
 
 export function encodePaymentIntent(intent: PaymentIntentProof): string {
-  return btoa(JSON.stringify(intent)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+  const bytes = new TextEncoder().encode(JSON.stringify(intent))
+  if (bytes.length > MAX_PAYLOAD_BYTES) throw new Error('Payment intent payload is too large.')
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
 }
 
 export function decodePaymentIntent(value: string): PaymentIntentProof {
-  if (value.length > MAX_PAYLOAD_BYTES) throw new Error('Payment intent payload is too large.')
+  if (value.length > MAX_ENCODED_PAYLOAD_LENGTH) throw new Error('Payment intent payload is too large.')
   const normalized = value.trim().replaceAll('-', '+').replaceAll('_', '/')
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
-  return JSON.parse(atob(padded)) as PaymentIntentProof
+  const binary = atob(padded)
+  if (binary.length > MAX_PAYLOAD_BYTES) throw new Error('Payment intent payload is too large.')
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
+  const json = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  return JSON.parse(json) as PaymentIntentProof
 }
 
 export function randomNonce(): `0x${string}` {

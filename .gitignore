@@ -15,6 +15,9 @@ dist-sdk
 artifacts
 cache
 *.local
+.env
+.env.*
+!.env.example
 /video/
 
 # Editor directories and files

@@ -1,6 +1,6 @@
 import hardhatNodeTestRunner from '@nomicfoundation/hardhat-node-test-runner'
 import hardhatViem from '@nomicfoundation/hardhat-viem'
-import { defineConfig } from 'hardhat/config'
+import { configVariable, defineConfig } from 'hardhat/config'
 
 export default defineConfig({
   plugins: [hardhatViem, hardhatNodeTestRunner],
@@ -14,6 +14,20 @@ export default defineConfig({
     },
   },
   networks: {
-    hardhatMainnet: { type: 'edr-simulated', chainType: 'l1' },
+    hardhatMainnet: { type: 'edr-simulated', chainType: 'l1', chainId: 31337 },
+    qieTestnet: {
+      type: 'http',
+      chainType: 'l1',
+      chainId: 1983,
+      url: 'https://rpc1testnet.qie.digital/',
+      accounts: [configVariable('QIE_DEPLOYER_PRIVATE_KEY')],
+    },
+    qieMainnet: {
+      type: 'http',
+      chainType: 'l1',
+      chainId: 1990,
+      url: 'https://rpc1mainnet.qie.digital/',
+      accounts: [configVariable('QIE_DEPLOYER_PRIVATE_KEY')],
+    },
   },
 })

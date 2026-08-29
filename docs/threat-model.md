@@ -28,3 +28,11 @@
 - display the signed amount, asset, route and purpose before the user signs;
 - treat expiry, chain changes and wallet-account changes as a hard failure;
 - do not call the result “safe payment” or “guaranteed recipient.”
+
+## Registry boundary
+
+- the registry stores a canonical EIP-712 digest, expiry and revocation state only;
+- the recipient signer must submit its own anchor transaction;
+- the contract does not verify the EIP-712 signature or payment settlement;
+- `isActive` means an unexpired, non-revoked anchor exists for that signer, not that an order is unused;
+- integrators still need their own consumed-nonce or order state for one-time execution.

@@ -2,10 +2,10 @@
 
 ## Must be true before submitting
 
-- [ ] QIE organizer confirms whether mainnet is mandatory despite the testnet quickstart.
+- [x] Mainnet eligibility requirement rechecked against the hackathon FAQ; testnet remains the development environment.
 - [ ] Public live demo opens without a login and is tested in a private window.
 - [ ] GitHub repository contains the current Payment Intent v2 build, tests and docs.
-- [ ] Deployed contract address is real, verified and on the organizer-approved network, or the form explicitly accepts “not applicable”.
+- [ ] QIE Mainnet contract address and transaction are real, explorer-visible and connected to the public frontend.
 - [ ] Developer Infrastructure & Tooling track is selected.
 - [ ] Product video is unlisted/publicly playable and shows the real signing/verification path.
 - [ ] QIE wallet address is verified in the submission profile.

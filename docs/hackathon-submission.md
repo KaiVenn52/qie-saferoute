@@ -37,7 +37,8 @@ SafeRoute gives any QIE application one preflight step:
 - wallet-connect and QIE Testnet switch flow
 - context-bound 30-minute Payment Intent proof
 - local proof verification and QR/JSON sharing
-- tested non-custodial registry contract source
+- tested non-custodial registry with the SDK's canonical EIP-712 digest
+- guarded QIE Testnet/Mainnet deployment runner that defaults to estimate-only
 - publish-ready TypeScript SDK output with declaration files
 
 ## Differentiation
@@ -58,7 +59,7 @@ Enter a QIE `0x…` or `qie1…` recipient, amount, asset and order → preview 
 
 ## Requested milestone framing
 
-- Milestone 1: audited resolver, proof schema, testnet reference app, public SDK and documentation.
-- Milestone 2: two external testnet integrations, proof revocation, expanded test vectors, usage evidence and production readiness review.
+- Milestone 1: audited resolver, proof schema, mainnet-connected reference app, public SDK and documentation.
+- Milestone 2: two external integrations, proof revocation, expanded test vectors, usage evidence and production readiness review.
 
 Do not submit this draft or deploy to mainnet without explicit user approval.

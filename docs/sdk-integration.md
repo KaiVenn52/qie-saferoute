@@ -14,7 +14,13 @@ npm pack --dry-run
 Once published, the import surface is:
 
 ```ts
-import { analyzeAddress, verifyPaymentIntent } from 'qie-saferoute-sdk'
+import {
+  analyzeAddress,
+  hashPaymentIntent,
+  paymentIntentAnchorArguments,
+  paymentIntentRegistryAbi,
+  verifyPaymentIntent,
+} from 'qie-saferoute-sdk'
 ```
 
 ## Verify at checkout
@@ -35,6 +41,25 @@ showWalletPaymentButton()
 
 The verifier checks the QIE address pair, signature, chain, asset, amount, expiry, nonce, destination type and signed strings. `expectedAudience` and `expectedReference` are application-level replay boundaries and should be supplied by every production integrator.
 
+## Optional onchain anchor
+
+The registry key is the same canonical EIP-712 digest used by the verifier. This avoids an integrator inventing a second hash format:
+
+```ts
+const [intentHash, expiresAt] = paymentIntentAnchorArguments(intent)
+
+await walletClient.writeContract({
+  address: registryAddress,
+  abi: paymentIntentRegistryAbi,
+  functionName: 'anchor',
+  args: [intentHash, expiresAt],
+})
+
+console.log(hashPaymentIntent(intent) === intentHash) // true
+```
+
+The recipient must anchor from the same address that signed the intent. Anchoring makes the digest and expiry discoverable and allows that signer to revoke it; it does not validate the signature or make the intent single-use.
+
 ## Intent fields
 
 | Field | Why it is signed |
@@ -49,4 +74,4 @@ The verifier checks the QIE address pair, signature, chain, asset, amount, expir
 
 ## Safety limits
 
-SafeRoute does not attest to identity, delivery, creditworthiness, or payment finality. A signed intent is not a transaction and should never be presented as a guarantee that funds will arrive.
+SafeRoute does not attest to identity, delivery, creditworthiness, or payment finality. A signed intent is not a transaction and should never be presented as a guarantee that funds will arrive. Encoded payloads support UTF-8 merchant references and purpose text, with a fixed size limit to prevent unbounded QR/import payloads.
