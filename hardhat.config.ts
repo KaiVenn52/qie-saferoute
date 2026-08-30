@@ -1,6 +1,9 @@
 import hardhatNodeTestRunner from '@nomicfoundation/hardhat-node-test-runner'
 import hardhatViem from '@nomicfoundation/hardhat-viem'
-import { configVariable, defineConfig } from 'hardhat/config'
+import { defineConfig } from 'hardhat/config'
+
+const deployerPrivateKey = process.env.QIE_DEPLOYER_PRIVATE_KEY
+const deploymentAccounts = deployerPrivateKey ? [deployerPrivateKey] : []
 
 export default defineConfig({
   plugins: [hardhatViem, hardhatNodeTestRunner],
@@ -20,14 +23,14 @@ export default defineConfig({
       chainType: 'l1',
       chainId: 1983,
       url: 'https://rpc1testnet.qie.digital/',
-      accounts: [configVariable('QIE_DEPLOYER_PRIVATE_KEY')],
+      accounts: deploymentAccounts,
     },
     qieMainnet: {
       type: 'http',
       chainType: 'l1',
       chainId: 1990,
       url: 'https://rpc1mainnet.qie.digital/',
-      accounts: [configVariable('QIE_DEPLOYER_PRIVATE_KEY')],
+      accounts: deploymentAccounts,
     },
   },
 })

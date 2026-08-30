@@ -38,6 +38,7 @@ SafeRoute gives any QIE application one preflight step:
 - context-bound 30-minute Payment Intent proof
 - local proof verification and QR/JSON sharing
 - tested non-custodial registry with the SDK's canonical EIP-712 digest
+- environment-gated frontend registry reads and recipient-controlled anchor/revoke actions
 - guarded QIE Testnet/Mainnet deployment runner that defaults to estimate-only
 - publish-ready TypeScript SDK output with declaration files
 

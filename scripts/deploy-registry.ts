@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { network } from 'hardhat'
-import { formatEther, type Hex } from 'viem'
+import { formatEther, getAddress, isAddress, type Address, type Hex } from 'viem'
 
 type RegistryArtifact = {
   abi: readonly unknown[]
@@ -16,8 +16,16 @@ const NETWORKS = {
 async function main() {
   const { viem } = await network.create()
   const publicClient = await viem.getPublicClient()
-  const [deployer] = await viem.getWalletClients()
-  if (!deployer) throw new Error('No deployer account is configured.')
+  const [walletDeployer] = await viem.getWalletClients()
+  const publicDeployer = process.env.QIE_DEPLOYER_ADDRESS
+  let deployerAddress: Address | undefined = walletDeployer?.account.address
+  if (!deployerAddress && publicDeployer) {
+    if (!isAddress(publicDeployer)) throw new Error('QIE_DEPLOYER_ADDRESS is not a valid EVM address.')
+    deployerAddress = getAddress(publicDeployer)
+  }
+  if (!deployerAddress) {
+    throw new Error('Set QIE_DEPLOYER_ADDRESS for a read-only estimate, or configure QIE_DEPLOYER_PRIVATE_KEY for an approved broadcast.')
+  }
 
   const chainId = await publicClient.getChainId()
   const metadata = NETWORKS[chainId as keyof typeof NETWORKS]
@@ -29,14 +37,14 @@ async function main() {
   )
   const artifact = JSON.parse(await readFile(artifactUrl, 'utf8')) as RegistryArtifact
   const [balance, gasPrice, estimatedGas] = await Promise.all([
-    publicClient.getBalance({ address: deployer.account.address }),
+    publicClient.getBalance({ address: deployerAddress }),
     publicClient.getGasPrice(),
-    publicClient.estimateGas({ account: deployer.account.address, data: artifact.bytecode }),
+    publicClient.estimateGas({ account: deployerAddress, data: artifact.bytecode }),
   ])
   const estimatedFee = estimatedGas * gasPrice
 
   console.log(`Network: ${metadata.name} (${chainId})`)
-  console.log(`Deployer: ${deployer.account.address}`)
+  console.log(`Deployer: ${deployerAddress}`)
   console.log(`Balance: ${formatEther(balance)} native QIE`)
   console.log(`Estimated gas: ${estimatedGas}`)
   console.log(`Gas price: ${gasPrice} wei`)
@@ -45,6 +53,9 @@ async function main() {
   if (process.env.QIE_BROADCAST !== 'yes') {
     console.log('Dry run only. No transaction was broadcast.')
     return
+  }
+  if (!walletDeployer) {
+    throw new Error('Broadcast requested, but QIE_DEPLOYER_PRIVATE_KEY is not configured.')
   }
   if (chainId === 1990 && process.env.QIE_MAINNET_CONFIRM !== 'QIE_MAINNET_1990') {
     throw new Error('Mainnet broadcast requires QIE_MAINNET_CONFIRM=QIE_MAINNET_1990.')

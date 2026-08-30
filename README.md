@@ -15,6 +15,7 @@ SafeRoute does **not** claim that a recipient is honest, simulate a payment, hol
 - offline JSON / URL-safe / QR sharing
 - installable TypeScript SDK build (`qie-saferoute-sdk`)
 - canonical EIP-712 digest plus non-custodial `PaymentIntentRegistry` anchor/revoke contract
+- optional frontend registry status, anchor and revoke controls when a verified deployment address is configured
 - responsive reference checkout flow with no custody or transfer call
 
 ## Run locally
@@ -45,7 +46,9 @@ npm run contracts:compile
 npm run contracts:test
 ```
 
-The hackathon requires a QIE Mainnet deployment for final eligibility. No mainnet deployment or production transaction has been performed yet, and no address is claimed. The deployment runner is dry-run-only by default and prints the exact account balance, gas estimate and estimated fee before any broadcast. See [`docs/deployment.md`](docs/deployment.md).
+The hackathon requires a QIE Mainnet deployment for final eligibility. No mainnet deployment or production transaction has been performed yet, and no address is claimed. The deployment runner is dry-run-only by default and can print the exact public-account balance, gas estimate and estimated fee without loading a private key. See [`docs/deployment.md`](docs/deployment.md).
+
+After a deployment is independently verified in the explorer, expose it to the reference app with `VITE_QIE_TESTNET_REGISTRY_ADDRESS` or `VITE_QIE_MAINNET_REGISTRY_ADDRESS`. The UI will then read `isActive` and let the connected recipient explicitly anchor or revoke the signed digest. Those writes require wallet approval and gas; they never send the payment itself.
 
 ## Security boundary
 

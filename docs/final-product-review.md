@@ -14,7 +14,7 @@ Proceed as a focused Developer Infrastructure & Tooling submission. The product 
 | Trust and safety | 9/10 | No custody or send action; limitations are stated next to the workflow. |
 | Mobile/responsive | 8/10 | Verified at desktop and mobile viewports. |
 | Accessibility | 8/10 | Semantic controls, labels, focus states, contrast, and status text are present. |
-| Completeness | 8/10 | Working app, tests, SDK, canonical registry integration, and guarded deployment path. Live mainnet evidence and the manual demo video remain submission dependencies. |
+| Completeness | 8.5/10 | Working app, tests, SDK, frontend registry lifecycle integration, and guarded deployment path. Live mainnet evidence and the manual demo video remain submission dependencies. |
 
 ## Market position
 

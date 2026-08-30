@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import {
-  ArrowUpRight, Braces, Check, CheckCircle2, CircleAlert, Copy, FileCheck2,
-  Link2, LockKeyhole, PackageCheck, Route, ShieldCheck, Store, Wallet,
+  ArrowUpRight, Braces, Check, CheckCircle2, CircleAlert, Copy, Database,
+  FileCheck2, Link2, LockKeyhole, PackageCheck, RefreshCw, Route, ShieldCheck,
+  Store, Wallet,
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import {
-  createWalletClient, custom, defineChain, formatUnits, getAddress, isAddress,
-  numberToHex, parseUnits,
+  createPublicClient, createWalletClient, custom, defineChain, formatUnits,
+  getAddress, http, isAddress, numberToHex, parseUnits,
 } from 'viem'
 import { analyzeAddress, type AddressAnalysis } from './lib/address'
 import {
@@ -16,10 +17,15 @@ import {
   verifyPaymentIntent,
 } from './lib/paymentIntent'
 import { QIE_NETWORKS, QIE_TESTNET_CHAIN_ID, type QieChainId } from './lib/networks'
+import {
+  paymentIntentAnchorArguments, paymentIntentRegistryAbi, paymentIntentRegistryKey,
+} from './lib/registry'
 import './App.css'
 
 const DEMO_ADDRESS = '0x577617999f8696149e8b6e176ab8404df62bae6d'
 const DEMO_AUDIENCE = '0x9e6f067f4a1c5f2d1c3b119b59e9078f25cf5a07'
+
+type RegistryStatus = 'idle' | 'checking' | 'active' | 'inactive' | 'anchoring' | 'revoking' | 'unavailable'
 
 function shorten(value: string, head = 10, tail = 8) {
   return value.length > head + tail + 1 ? `${value.slice(0, head)}…${value.slice(-tail)}` : value
@@ -36,6 +42,24 @@ function destinationLabel(value: DestinationType) {
     exchange_deposit: 'Exchange deposit',
     bridge: 'Bridge transfer',
   }[value]
+}
+
+function qieChain(chainId: QieChainId) {
+  const network = QIE_NETWORKS[chainId]
+  return defineChain({
+    id: chainId,
+    name: network.name,
+    nativeCurrency: network.nativeCurrency,
+    rpcUrls: { default: { http: [network.rpcUrl] } },
+    blockExplorers: { default: { name: `${network.name} Explorer`, url: network.explorerUrl } },
+  })
+}
+
+function registryAddress(chainId: QieChainId): `0x${string}` | null {
+  const configured = chainId === 1983
+    ? import.meta.env.VITE_QIE_TESTNET_REGISTRY_ADDRESS
+    : import.meta.env.VITE_QIE_MAINNET_REGISTRY_ADDRESS
+  return configured && isAddress(configured) ? getAddress(configured) : null
 }
 
 function App() {
@@ -59,10 +83,13 @@ function App() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
+  const [registryStatus, setRegistryStatus] = useState<RegistryStatus>('idle')
+  const [registryTransaction, setRegistryTransaction] = useState<`0x${string}` | null>(null)
 
   const network = QIE_NETWORKS[chainId]
   const intentPayload = useMemo(() => (intent ? encodePaymentIntent(intent) : ''), [intent])
   const activeIntent = intent ?? draft
+  const activeRegistryAddress = registryAddress(chainId)
 
   function buildDraft(): UnsignedPaymentIntent {
     const checked = analyzeAddress(recipient)
@@ -111,7 +138,7 @@ function App() {
     }
   }
 
-  async function connectWallet(): Promise<`0x${string}` | null> {
+  async function connectWallet(clearPaymentContext = true): Promise<`0x${string}` | null> {
     if (!window.ethereum) {
       setError('No injected wallet found. Install QIE Wallet or MetaMask to sign an intent.')
       return null
@@ -124,8 +151,12 @@ function App() {
       setAccount(next)
       setRecipient(next)
       setAnalysis(analyzeAddress(next))
-      setDraft(null)
-      setIntent(null)
+      if (clearPaymentContext) {
+        setDraft(null)
+        setIntent(null)
+        setRegistryStatus('idle')
+        setRegistryTransaction(null)
+      }
       setError('')
       return next
     } catch (reason) {
@@ -136,37 +167,36 @@ function App() {
     }
   }
 
+  async function ensureWalletNetwork() {
+    if (!window.ethereum) throw new Error('No injected wallet found.')
+    try {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: numberToHex(chainId) }] })
+    } catch (switchError) {
+      const code = typeof switchError === 'object' && switchError !== null && 'code' in switchError
+        ? Number(switchError.code)
+        : undefined
+      if (code !== 4902) throw switchError
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: numberToHex(chainId), chainName: network.name,
+          nativeCurrency: network.nativeCurrency, rpcUrls: [network.rpcUrl],
+          blockExplorerUrls: [network.explorerUrl],
+        }],
+      })
+    }
+  }
+
   async function signIntent() {
     if (!window.ethereum) return connectWallet()
     setBusy(true)
     try {
-      const signer = account ?? await connectWallet()
+      const signer = account ?? await connectWallet(false)
       if (!signer) return
       const unsigned = buildDraft()
       if (unsigned.recipientEvm !== signer) throw new Error('The connected wallet must match the recipient address before it can sign.')
-      const chain = defineChain({
-        id: chainId,
-        name: network.name,
-        nativeCurrency: network.nativeCurrency,
-        rpcUrls: { default: { http: [network.rpcUrl] } },
-        blockExplorers: { default: { name: `${network.name} Explorer`, url: network.explorerUrl } },
-      })
-      try {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: numberToHex(chainId) }] })
-      } catch (switchError) {
-        const code = typeof switchError === 'object' && switchError !== null && 'code' in switchError
-          ? Number(switchError.code)
-          : undefined
-        if (code !== 4902) throw switchError
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: numberToHex(chainId), chainName: network.name,
-            nativeCurrency: network.nativeCurrency, rpcUrls: [network.rpcUrl],
-            blockExplorerUrls: [network.explorerUrl],
-          }],
-        })
-      }
+      const chain = qieChain(chainId)
+      await ensureWalletNetwork()
       const client = createWalletClient({ account: signer, chain, transport: custom(window.ethereum) })
       const signature = await client.signTypedData({
         account: signer,
@@ -179,10 +209,72 @@ function App() {
       setDraft(unsigned)
       setIntent(next)
       setAnalysis(analyzeAddress(signer))
+      setRegistryStatus(activeRegistryAddress ? 'idle' : 'unavailable')
+      setRegistryTransaction(null)
       setNotice('Recipient signature verified locally. No payment or on-chain transaction was sent.')
       setError('')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Payment intent signing was cancelled.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function refreshRegistryStatus() {
+    if (!intent) return setError('Sign or verify a payment intent before checking the registry.')
+    if (!activeRegistryAddress) {
+      setRegistryStatus('unavailable')
+      return setError(`No registry contract is configured for ${network.name}.`)
+    }
+    setRegistryStatus('checking')
+    setError('')
+    try {
+      const publicClient = createPublicClient({ chain: qieChain(chainId), transport: http(network.rpcUrl) })
+      const active = await publicClient.readContract({
+        address: activeRegistryAddress,
+        abi: paymentIntentRegistryAbi,
+        functionName: 'isActive',
+        args: [intent.recipientEvm, paymentIntentRegistryKey(intent)],
+      })
+      setRegistryStatus(active ? 'active' : 'inactive')
+      setNotice(active ? 'This signed intent is active in the on-chain registry.' : 'No active on-chain anchor exists for this intent.')
+    } catch (reason) {
+      setRegistryStatus('idle')
+      setError(reason instanceof Error ? reason.message : 'Unable to read the registry.')
+    }
+  }
+
+  async function writeRegistry(action: 'anchor' | 'revoke') {
+    if (!intent) return setError('Sign a payment intent before using the registry.')
+    if (!activeRegistryAddress) return setError(`No registry contract is configured for ${network.name}.`)
+    if (!window.ethereum) return setError('No injected wallet found.')
+    setBusy(true)
+    setRegistryStatus(action === 'anchor' ? 'anchoring' : 'revoking')
+    setError('')
+    try {
+      const signer = account ?? await connectWallet(false)
+      if (!signer) return
+      if (signer !== intent.recipientEvm) throw new Error('The connected recipient wallet must submit this registry transaction.')
+      await ensureWalletNetwork()
+      const chain = qieChain(chainId)
+      const walletClient = createWalletClient({ account: signer, chain, transport: custom(window.ethereum) })
+      const hash = await walletClient.writeContract({
+        address: activeRegistryAddress,
+        abi: paymentIntentRegistryAbi,
+        functionName: action,
+        args: action === 'anchor' ? paymentIntentAnchorArguments(intent) : [paymentIntentRegistryKey(intent)],
+      })
+      setRegistryTransaction(hash)
+      const publicClient = createPublicClient({ chain, transport: http(network.rpcUrl) })
+      const receipt = await publicClient.waitForTransactionReceipt({ hash })
+      if (receipt.status !== 'success') throw new Error('The registry transaction reverted.')
+      setRegistryStatus(action === 'anchor' ? 'active' : 'inactive')
+      setNotice(action === 'anchor'
+        ? 'Intent anchored on-chain. Payment remains a separate wallet action.'
+        : 'Intent revoked on-chain. Verifiers should now reject it.')
+    } catch (reason) {
+      setRegistryStatus('idle')
+      setError(reason instanceof Error ? reason.message : `Unable to ${action} this intent.`)
     } finally {
       setBusy(false)
     }
@@ -220,6 +312,8 @@ function App() {
     setIntent(null)
     setDraft(null)
     setNotice('')
+    setRegistryStatus('idle')
+    setRegistryTransaction(null)
   }
 
   const expires = activeIntent ? new Date(activeIntent.expiresAt * 1000) : null
@@ -311,6 +405,16 @@ function App() {
                   <div><dt>Expires</dt><dd>{expires?.toLocaleString()}</dd></div>
                 </dl>
                 <div className="proof-zone"><div><span className="section-label">Portable proof</span><strong>{shorten(activeIntent.nonce, 14, 10)}</strong><p>{intent ? 'JSON and QR can be verified offline.' : 'No transaction or signature has been sent.'}</p></div><div className="qr-wrap"><QRCodeSVG value={intentPayload || analysis.qieAddress} size={88} bgColor="#fbfaf6" fgColor="#143f32" /></div></div>
+                {intent && <div className="registry-zone">
+                  <div className="registry-heading"><Database size={17} /><div><strong>Optional on-chain lifecycle</strong><span>{activeRegistryAddress ? shorten(activeRegistryAddress, 12, 8) : `Not configured on ${network.name}`}</span></div><b className={`registry-state ${registryStatus}`}>{registryStatus}</b></div>
+                  <p>Anchor or revoke the signed digest without storing payment details or moving funds.</p>
+                  {registryTransaction && <code title={registryTransaction}>Tx {shorten(registryTransaction, 12, 10)}</code>}
+                  <div className="registry-actions">
+                    <button onClick={() => void refreshRegistryStatus()} disabled={busy || !activeRegistryAddress}><RefreshCw size={15} /> Check</button>
+                    <button onClick={() => void writeRegistry('anchor')} disabled={busy || !activeRegistryAddress || registryStatus === 'active'}><Database size={15} /> Anchor (gas)</button>
+                    <button onClick={() => void writeRegistry('revoke')} disabled={busy || !activeRegistryAddress || registryStatus !== 'active'}><CircleAlert size={15} /> Revoke</button>
+                  </div>
+                </div>}
                 {intent ? <button className="secondary-action" onClick={() => void copyText(JSON.stringify(intent))}><ArrowUpRight size={18} /> Copy signed intent JSON</button> : <button className="secondary-action" onClick={() => void signIntent()} disabled={busy}><Wallet size={18} /> Sign as recipient</button>}
               </>
             ) : <div className="empty-result"><FileCheck2 size={34} /><h2>No payment intent yet</h2><p>Complete the payment context to preview the exact signing request.</p></div>}

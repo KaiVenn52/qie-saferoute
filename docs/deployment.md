@@ -23,14 +23,22 @@ The local deployment command estimates the exact compiled bytecode and exits bef
 
 ## Testnet, then mainnet
 
-Configure the deployer key only in the participant's local terminal environment. Never paste it into chat, source files, `.env`, screenshots, recordings, or the repository.
+For a read-only network estimate, configure only the public deployer address. No private key is required and the default command cannot broadcast:
+
+```powershell
+$env:QIE_DEPLOYER_ADDRESS='0xYOUR_PUBLIC_DEPLOYER_ADDRESS'
+npm run contracts:deploy:testnet
+npm run contracts:deploy:mainnet
+```
+
+Configure the deployer key only in the participant's local terminal environment when an actual deployment has been approved. Never paste it into chat, source files, `.env`, screenshots, recordings, or the repository.
 
 ```bash
 npm run contracts:deploy:testnet
 npm run contracts:deploy:mainnet
 ```
 
-Those commands are estimates only. Broadcasting is an explicit participant-controlled action. Mainnet additionally refuses to send unless `QIE_MAINNET_CONFIRM=QIE_MAINNET_1990` is present. Before that final action, verify:
+Those commands remain estimates unless `QIE_BROADCAST=yes` is deliberately set. Broadcasting also refuses to start without a configured private key. Mainnet additionally requires `QIE_MAINNET_CONFIRM=QIE_MAINNET_1990`. Before that final action, verify:
 
 1. the printed chain is `QIE Mainnet (1990)`;
 2. the printed deployer is the intended public wallet;
