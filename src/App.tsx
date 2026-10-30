@@ -85,12 +85,16 @@ function App() {
   const [busy, setBusy] = useState(false)
   const [registryStatus, setRegistryStatus] = useState<RegistryStatus>('idle')
   const [registryTransaction, setRegistryTransaction] = useState<`0x${string}` | null>(null)
-  const [registryDeployed, setRegistryDeployed] = useState<boolean | null>(null)
+  const [registryCheck, setRegistryCheck] = useState<{
+    address: `0x${string}`; chainId: QieChainId; deployed: boolean
+  } | null>(null)
 
   const network = QIE_NETWORKS[chainId]
   const intentPayload = useMemo(() => (intent ? encodePaymentIntent(intent) : ''), [intent])
   const activeIntent = intent ?? draft
   const activeRegistryAddress = registryAddress(chainId)
+  const registryDeployed = registryCheck?.address === activeRegistryAddress && registryCheck?.chainId === chainId
+    ? registryCheck.deployed : null
   const registryReady = activeRegistryAddress !== null && registryDeployed === true
   const registryLabel = !activeRegistryAddress
     ? `Not configured on ${network.name}`
@@ -105,17 +109,13 @@ function App() {
   // controls once bytecode actually exists at the configured address on the selected chain,
   // so an unverified or mistyped address cannot silently enable anchor/revoke.
   useEffect(() => {
-    if (!activeRegistryAddress) {
-      setRegistryDeployed(null)
-      return
-    }
+    if (!activeRegistryAddress) return
     let cancelled = false
-    setRegistryDeployed(null)
     const publicClient = createPublicClient({ chain: qieChain(chainId), transport: http(network.rpcUrl) })
     publicClient
       .getCode({ address: activeRegistryAddress })
-      .then((code) => { if (!cancelled) setRegistryDeployed(Boolean(code && code !== '0x')) })
-      .catch(() => { if (!cancelled) setRegistryDeployed(false) })
+      .then((code) => { if (!cancelled) setRegistryCheck({ address: activeRegistryAddress, chainId, deployed: Boolean(code && code !== '0x') }) })
+      .catch(() => { if (!cancelled) setRegistryCheck({ address: activeRegistryAddress, chainId, deployed: false }) })
     return () => { cancelled = true }
   }, [activeRegistryAddress, chainId, network.rpcUrl])
 

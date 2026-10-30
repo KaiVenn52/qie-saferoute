@@ -48,3 +48,10 @@ This is a factual, human-readable record of the engineering decisions behind the
 - Clarified that a valid signature alone does not establish the payer's expected order, amount or verifier.
 - Added SDK/contract validation before Pages publication and prepared the switch from legacy gh-pages hosting to GitHub Actions.
 - Disclosed the current Zod advisory in the threat model. No mainnet contract address, paid operation or hackathon submission is claimed.
+
+## 2026-10-30 — compatible dependency maintenance
+
+- Updated the lockfile within declared dependency ranges, including Vite 8.3.5, Vitest 4.1.12 and Hardhat 3.21.2. The full audit fell from ten affected package groups to five; all remaining groups trace to the Zod advisory. Production-only audit still reports one Zod group. No vulnerability suppression or forced cross-major override was applied.
+- Bound registry bytecode results to chain ID and address, eliminating synchronous effect resets and preventing reuse of a previous network's successful result while the new network is being checked.
+- Upgraded Pages workflow actions to verified official release tags: checkout 7.0.1, setup-node 7.1.0, upload-pages-artifact 5.0.0 and deploy-pages 5.0.1.
+- Revalidated SDK and contract tests, builds and package contents. Browser regression uses intercepted provider reads and synthetic locally signed intents only; it does not sign a wallet transaction, send funds or establish deployment.
