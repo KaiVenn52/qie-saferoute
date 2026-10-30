@@ -59,6 +59,21 @@ export type PaymentIntentValidation = {
   reason?: string
 }
 
+/**
+ * Application-level expectations. Every field is optional, but a production verifier should
+ * supply at least `expectedAudience` and `expectedReference`, and should pin the amount and
+ * asset it is about to display or charge.
+ */
+export type PaymentIntentExpectations = {
+  now?: number
+  expectedAudience?: `0x${string}`
+  expectedReference?: string
+  expectedRecipientEvm?: `0x${string}`
+  expectedAsset?: `0x${string}`
+  expectedAmount?: string | bigint
+  expectedDecimals?: number
+}
+
 export function paymentIntentDomain(chainId: QieChainId) {
   return { name: 'QIE SafeRoute', version: '2', chainId } as const
 }
@@ -126,17 +141,43 @@ function validateShape(intent: PaymentIntentProof, now: number): PaymentIntentVa
 
 export async function verifyPaymentIntent(
   intent: PaymentIntentProof,
-  options: { now?: number; expectedAudience?: `0x${string}`; expectedReference?: string } = {},
+  options: PaymentIntentExpectations = {},
 ): Promise<PaymentIntentValidation> {
   try {
     const shape = validateShape(intent, options.now ?? Math.floor(Date.now() / 1000))
     if (!shape.valid) return shape
-    if (options.expectedAudience && getAddress(intent.audience) !== getAddress(options.expectedAudience)) {
-      return { valid: false, reason: 'Payment intent was created for a different verifier.' }
+
+    const addressExpectations = [
+      ['expectedRecipientEvm', options.expectedRecipientEvm, intent.recipientEvm, 'Payment recipient does not match the expected recipient.'],
+      ['expectedAudience', options.expectedAudience, intent.audience, 'Payment intent was created for a different verifier.'],
+      ['expectedAsset', options.expectedAsset, intent.asset, 'Payment asset does not match the expected asset.'],
+    ] as const
+    for (const [name, expected, actual, reason] of addressExpectations) {
+      if (expected === undefined) continue
+      if (!isAddress(expected)) return { valid: false, reason: `${name} is not a valid EVM address.` }
+      if (getAddress(actual) !== getAddress(expected)) return { valid: false, reason }
     }
-    if (options.expectedReference && intent.reference !== options.expectedReference) {
+
+    if (options.expectedReference !== undefined && intent.reference !== options.expectedReference) {
       return { valid: false, reason: 'Payment reference does not match.' }
     }
+
+    if (options.expectedAmount !== undefined) {
+      let expectedAmount: bigint
+      try {
+        expectedAmount = BigInt(options.expectedAmount)
+      } catch {
+        return { valid: false, reason: 'expectedAmount is not a valid integer base-unit amount.' }
+      }
+      if (BigInt(intent.amount) !== expectedAmount) {
+        return { valid: false, reason: 'Payment amount does not match the expected amount.' }
+      }
+    }
+
+    if (options.expectedDecimals !== undefined && intent.decimals !== options.expectedDecimals) {
+      return { valid: false, reason: 'Payment asset decimals do not match the expected decimals.' }
+    }
+
     const valid = await verifyTypedData({
       address: getAddress(intent.recipientEvm),
       domain: paymentIntentDomain(intent.chainId),

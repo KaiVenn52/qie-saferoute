@@ -56,4 +56,41 @@ describe('PaymentIntentRegistry', async () => {
     await assert.rejects(registry.write.anchor([zeroHash, block.timestamp + 60n], { account: signer.account }))
     await assert.rejects(registry.write.anchor([intentHash, block.timestamp + 8n * 24n * 60n * 60n], { account: signer.account }))
   })
+
+  it('refreshes the expiry of a live anchor', async () => {
+    const registry = await viem.deployContract('PaymentIntentRegistry')
+    const block = await publicClient.getBlock()
+    const intentHash = keccak256(stringToHex('ORDER-16384'))
+
+    await registry.write.anchor([intentHash, block.timestamp + 1800n], { account: signer.account })
+    await registry.write.anchor([intentHash, block.timestamp + 3600n], { account: signer.account })
+
+    assert.equal(await registry.read.isActive([signer.account.address, intentHash]), true)
+    const [expiresAt, revoked] = await registry.read.anchors([signer.account.address, intentHash])
+    assert.equal(expiresAt, block.timestamp + 3600n)
+    assert.equal(revoked, false)
+  })
+
+  it('keeps a revoked anchor revoked and cannot be reactivated', async () => {
+    const registry = await viem.deployContract('PaymentIntentRegistry')
+    const block = await publicClient.getBlock()
+    const intentHash = keccak256(stringToHex('ORDER-32768'))
+
+    await registry.write.anchor([intentHash, block.timestamp + 1800n], { account: signer.account })
+    await registry.write.revoke([intentHash], { account: signer.account })
+    assert.equal(await registry.read.isActive([signer.account.address, intentHash]), false)
+
+    // Re-anchoring the same digest must not clear the revocation bit.
+    await assert.rejects(
+      registry.write.anchor([intentHash, block.timestamp + 3600n], { account: signer.account }),
+    )
+    assert.equal(await registry.read.isActive([signer.account.address, intentHash]), false)
+    const [, revoked] = await registry.read.anchors([signer.account.address, intentHash])
+    assert.equal(revoked, true)
+
+    // A fresh nonce yields a different digest, which is the supported way to restart.
+    const freshHash = keccak256(stringToHex('ORDER-32769'))
+    await registry.write.anchor([freshHash, block.timestamp + 1800n], { account: signer.account })
+    assert.equal(await registry.read.isActive([signer.account.address, freshHash]), true)
+  })
 })

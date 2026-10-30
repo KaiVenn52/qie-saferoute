@@ -17,6 +17,7 @@ export {
 } from '../lib/registry.js'
 export type {
   DestinationType,
+  PaymentIntentExpectations,
   PaymentIntentProof,
   PaymentIntentValidation,
   UnsignedPaymentIntent,

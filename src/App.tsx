@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowUpRight, Braces, Check, CheckCircle2, CircleAlert, Copy, Database,
   FileCheck2, Link2, LockKeyhole, PackageCheck, RefreshCw, Route, ShieldCheck,
@@ -85,11 +85,39 @@ function App() {
   const [busy, setBusy] = useState(false)
   const [registryStatus, setRegistryStatus] = useState<RegistryStatus>('idle')
   const [registryTransaction, setRegistryTransaction] = useState<`0x${string}` | null>(null)
+  const [registryDeployed, setRegistryDeployed] = useState<boolean | null>(null)
 
   const network = QIE_NETWORKS[chainId]
   const intentPayload = useMemo(() => (intent ? encodePaymentIntent(intent) : ''), [intent])
   const activeIntent = intent ?? draft
   const activeRegistryAddress = registryAddress(chainId)
+  const registryReady = activeRegistryAddress !== null && registryDeployed === true
+  const registryLabel = !activeRegistryAddress
+    ? `Not configured on ${network.name}`
+    : registryDeployed === false
+      ? `No contract at ${shorten(activeRegistryAddress, 12, 8)} on ${network.name}`
+      : registryDeployed === null
+        ? `Checking ${shorten(activeRegistryAddress, 12, 8)}…`
+        : shorten(activeRegistryAddress, 12, 8)
+  const registryBadge = registryDeployed === false ? 'unavailable' : registryStatus
+
+  // Fail closed: a syntactically valid address is not enough. Only enable the registry
+  // controls once bytecode actually exists at the configured address on the selected chain,
+  // so an unverified or mistyped address cannot silently enable anchor/revoke.
+  useEffect(() => {
+    if (!activeRegistryAddress) {
+      setRegistryDeployed(null)
+      return
+    }
+    let cancelled = false
+    setRegistryDeployed(null)
+    const publicClient = createPublicClient({ chain: qieChain(chainId), transport: http(network.rpcUrl) })
+    publicClient
+      .getCode({ address: activeRegistryAddress })
+      .then((code) => { if (!cancelled) setRegistryDeployed(Boolean(code && code !== '0x')) })
+      .catch(() => { if (!cancelled) setRegistryDeployed(false) })
+    return () => { cancelled = true }
+  }, [activeRegistryAddress, chainId, network.rpcUrl])
 
   function buildDraft(): UnsignedPaymentIntent {
     const checked = analyzeAddress(recipient)
@@ -211,7 +239,7 @@ function App() {
       setAnalysis(analyzeAddress(signer))
       setRegistryStatus(activeRegistryAddress ? 'idle' : 'unavailable')
       setRegistryTransaction(null)
-      setNotice('Recipient signature verified locally. No payment or on-chain transaction was sent.')
+      setNotice('Recipient signature created locally. No payment or on-chain transaction was sent.')
       setError('')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Payment intent signing was cancelled.')
@@ -226,6 +254,10 @@ function App() {
       setRegistryStatus('unavailable')
       return setError(`No registry contract is configured for ${network.name}.`)
     }
+    if (!registryReady) {
+      setRegistryStatus('unavailable')
+      return setError(`No PaymentIntentRegistry contract code was found at ${activeRegistryAddress} on ${network.name}.`)
+    }
     setRegistryStatus('checking')
     setError('')
     try {
@@ -237,7 +269,9 @@ function App() {
         args: [intent.recipientEvm, paymentIntentRegistryKey(intent)],
       })
       setRegistryStatus(active ? 'active' : 'inactive')
-      setNotice(active ? 'This signed intent is active in the on-chain registry.' : 'No active on-chain anchor exists for this intent.')
+      setNotice(active
+        ? 'An unexpired, non-revoked anchor exists for this digest. The contract does not verify signatures.'
+        : 'No active on-chain anchor exists for this intent.')
     } catch (reason) {
       setRegistryStatus('idle')
       setError(reason instanceof Error ? reason.message : 'Unable to read the registry.')
@@ -247,6 +281,7 @@ function App() {
   async function writeRegistry(action: 'anchor' | 'revoke') {
     if (!intent) return setError('Sign a payment intent before using the registry.')
     if (!activeRegistryAddress) return setError(`No registry contract is configured for ${network.name}.`)
+    if (!registryReady) return setError(`No PaymentIntentRegistry contract code was found at ${activeRegistryAddress} on ${network.name}.`)
     if (!window.ethereum) return setError('No injected wallet found.')
     setBusy(true)
     setRegistryStatus(action === 'anchor' ? 'anchoring' : 'revoking')
@@ -292,7 +327,7 @@ function App() {
       setDraft(result.valid ? parsed : null)
       setAnalysis(result.valid ? analyzeAddress(parsed.recipientEvm) : null)
       if (result.valid) setChainId(parsed.chainId)
-      setNotice(result.valid ? 'Signature, route, amount, order and verifier context all match.' : '')
+      setNotice(result.valid ? 'Recipient signature is valid. Compare the signed amount, order and verifier with your expected payment before paying.' : '')
       setError(result.valid ? '' : result.reason ?? 'Payment intent is invalid.')
     } catch {
       setProofState('invalid')
@@ -406,13 +441,14 @@ function App() {
                 </dl>
                 <div className="proof-zone"><div><span className="section-label">Portable proof</span><strong>{shorten(activeIntent.nonce, 14, 10)}</strong><p>{intent ? 'JSON and QR can be verified offline.' : 'No transaction or signature has been sent.'}</p></div><div className="qr-wrap"><QRCodeSVG value={intentPayload || analysis.qieAddress} size={88} bgColor="#fbfaf6" fgColor="#143f32" /></div></div>
                 {intent && <div className="registry-zone">
-                  <div className="registry-heading"><Database size={17} /><div><strong>Optional on-chain lifecycle</strong><span>{activeRegistryAddress ? shorten(activeRegistryAddress, 12, 8) : `Not configured on ${network.name}`}</span></div><b className={`registry-state ${registryStatus}`}>{registryStatus}</b></div>
-                  <p>Anchor or revoke the signed digest without storing payment details or moving funds.</p>
+                  <div className="registry-heading"><Database size={17} /><div><strong>Optional on-chain lifecycle</strong><span>{registryLabel}</span></div><b className={`registry-state ${registryBadge}`}>{registryBadge}</b></div>
+                  <p>Anchor or revoke the signed digest without storing payment details or moving funds. The contract stores a digest, expiry and revocation bit only, and does not verify signatures.</p>
+                  {registryDeployed === false && <p className="hint">Registry controls stay disabled until a deployed contract is found at this address on {network.name}.</p>}
                   {registryTransaction && <code title={registryTransaction}>Tx {shorten(registryTransaction, 12, 10)}</code>}
                   <div className="registry-actions">
-                    <button onClick={() => void refreshRegistryStatus()} disabled={busy || !activeRegistryAddress}><RefreshCw size={15} /> Check</button>
-                    <button onClick={() => void writeRegistry('anchor')} disabled={busy || !activeRegistryAddress || registryStatus === 'active'}><Database size={15} /> Anchor (gas)</button>
-                    <button onClick={() => void writeRegistry('revoke')} disabled={busy || !activeRegistryAddress || registryStatus !== 'active'}><CircleAlert size={15} /> Revoke</button>
+                    <button onClick={() => void refreshRegistryStatus()} disabled={busy || !registryReady}><RefreshCw size={15} /> Check</button>
+                    <button onClick={() => void writeRegistry('anchor')} disabled={busy || !registryReady || registryStatus === 'active'}><Database size={15} /> Anchor (gas)</button>
+                    <button onClick={() => void writeRegistry('revoke')} disabled={busy || !registryReady || registryStatus !== 'active'}><CircleAlert size={15} /> Revoke</button>
                   </div>
                 </div>}
                 {intent ? <button className="secondary-action" onClick={() => void copyText(JSON.stringify(intent))}><ArrowUpRight size={18} /> Copy signed intent JSON</button> : <button className="secondary-action" onClick={() => void signIntent()} disabled={busy}><Wallet size={18} /> Sign as recipient</button>}
@@ -429,7 +465,7 @@ function App() {
         <section className="developer-strip" id="sdk">
           <div className="sdk-intro"><span><Braces /></span><div><h3>Installable SDK</h3><p>Typed verifier for browser, server and CI.</p></div></div>
           <pre><code><b>import</b> {'{ verifyPaymentIntent }'} <b>from</b> <i>'qie-saferoute-sdk'</i>;{`\n\n`}<b>const</b> result = <b>await</b> verifyPaymentIntent(intent, {'{'}{`\n  `}expectedAudience: merchant,{`\n  `}expectedReference: order.id,{`\n`}{'}'});</code></pre>
-          <div className="security-note"><PackageCheck /><div><strong>13 SDK tests · 3 contract tests</strong><p>Publish-ready package; not yet released or deployed.</p></div></div>
+          <div className="security-note"><PackageCheck /><div><strong>12 SDK tests · 5 contract tests</strong><p>Publish-ready package; not yet released or deployed.</p></div></div>
         </section>
         <section className="market-note"><span>Designed for</span><strong>Wallet send screens</strong><strong>Exchange deposit flows</strong><strong>Merchant checkout SDKs</strong></section>
       </main>

@@ -15,8 +15,9 @@
 
   <section>
     <h2>Links</h2>
-    <p>Repository: <a href="https://github.com/kangming0602/qie-saferoute">github.com/kangming0602/qie-saferoute</a></p>
-    <p>Live demo: <a href="https://kangming0602.github.io/qie-saferoute/">kangming0602.github.io/qie-saferoute</a></p>
+    <p>Repository: <a href="https://github.com/KaiVenn52/qie-saferoute">github.com/KaiVenn52/qie-saferoute</a></p>
+    <p>Live demo: <a href="https://kaivenn52.github.io/qie-saferoute/">kaivenn52.github.io/qie-saferoute</a></p>
+    <p>Note: the public Pages build currently serves the initial MVP bundle. The Payment Intent v2 build is published from <code>main</code> once GitHub Pages is switched to the GitHub Actions source.</p>
     <p>Product video: pending owner-recorded public URL.</p>
   </section>
 
@@ -42,7 +43,7 @@
 
   <section>
     <h2>MVP evidence</h2>
-    <p>Working responsive React/TypeScript app; local dual-address resolution; wallet-signed proof creation; offline JSON/QR verification; malformed-input and expiry handling; eight passing automated tests; successful lint and production build; zero npm audit findings.</p>
+    <p>Working responsive React/TypeScript app; local dual-address resolution verified against QIE's public chain registry, Cosmos API and mainnet explorer; wallet-signed Payment Intent creation; offline JSON/QR verification; malformed-input, expiry and context-substitution handling; 12 passing SDK tests and 5 passing contract tests; successful lint and production build; zero vulnerabilities in the production dependency tree.</p>
   </section>
 
   <section>
@@ -57,7 +58,7 @@
 
   <section class="warn">
     <h2>Deployment disclosure</h2>
-    <p>The app is a public testnet MVP. The optional registry source is included and compiles, but no contract has been deployed to mainnet. Mainnet deployment requires separate owner authorization and security review.</p>
+    <p>The front end is publicly hosted, but no registry contract has been deployed to QIE Testnet or QIE Mainnet, and no transaction has been broadcast. The optional registry source is included and compiles. Mainnet deployment requires separate owner authorization and security review.</p>
   </section>
 </body>
 </html>

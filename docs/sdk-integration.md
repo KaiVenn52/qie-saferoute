@@ -29,6 +29,10 @@ import {
 const result = await verifyPaymentIntent(intent, {
   expectedAudience: merchantWallet,
   expectedReference: order.id,
+  expectedRecipientEvm: order.recipient,
+  expectedAsset: order.asset,
+  expectedAmount: order.amountBaseUnits,
+  expectedDecimals: order.decimals,
 })
 
 if (!result.valid) {
@@ -39,7 +43,7 @@ if (!result.valid) {
 showWalletPaymentButton()
 ```
 
-The verifier checks the QIE address pair, signature, chain, asset, amount, expiry, nonce, destination type and signed strings. `expectedAudience` and `expectedReference` are application-level replay boundaries and should be supplied by every production integrator.
+The verifier checks the QIE address pair, signature, chain, asset, amount, decimals, expiry, nonce, destination type and signed strings. `expectedAudience` and `expectedReference` are application-level replay boundaries and should be supplied by every production integrator. `expectedRecipientEvm`, `expectedAsset`, `expectedAmount` and `expectedDecimals` let the host pin the exact payment it is about to display, so a substituted recipient, asset or amount fails closed rather than merely being visible. `expectedAmount` accepts base units as a decimal string or `bigint`.
 
 ## Optional onchain anchor
 
@@ -59,6 +63,10 @@ console.log(hashPaymentIntent(intent) === intentHash) // true
 ```
 
 The recipient must anchor from the same address that signed the intent. Anchoring makes the digest and expiry discoverable and allows that signer to revoke it; it does not validate the signature or make the intent single-use.
+
+Pass the **signed** `expiresAt` (as `paymentIntentAnchorArguments` does). The contract cannot see the intent, so it cannot check this for you, and an anchor that outlives the signed lifetime would misrepresent how long the intent is valid.
+
+Revocation is final per digest: re-anchoring a revoked intent reverts with `AlreadyRevoked`, so a verifier can treat `revoked` as a monotonic signal. To restart, issue a new intent with a new nonce.
 
 ## Intent fields
 

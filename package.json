@@ -18,7 +18,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && npm run build:sdk",
+    "clean": "node scripts/clean-build.mjs",
+    "build": "npm run clean && tsc -b && vite build && npm run build:sdk",
     "build:sdk": "tsc -p tsconfig.sdk.json",
     "contracts:compile": "hardhat compile --build-profile production",
     "contracts:test": "hardhat test nodejs test/PaymentIntentRegistry.ts --build-profile production",

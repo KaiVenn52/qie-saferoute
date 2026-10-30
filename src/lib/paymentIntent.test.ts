@@ -95,6 +95,29 @@ describe('QIE payment intent', () => {
     expect((await verifyPaymentIntent(signed)).valid).toBe(true)
   })
 
+  it('rejects a substituted recipient, asset, amount or decimals when the verifier pins them', async () => {
+    const intent = await makeIntent()
+    const otherAccount = privateKeyToAccount('0x0000000000000000000000000000000000000000000000000000000000000004')
+    expect((await verifyPaymentIntent(intent, { expectedRecipientEvm: otherAccount.address })).valid).toBe(false)
+    expect((await verifyPaymentIntent(intent, { expectedAsset: otherAccount.address })).valid).toBe(false)
+    expect((await verifyPaymentIntent(intent, { expectedAmount: parseUnits('13', 18) })).valid).toBe(false)
+    expect((await verifyPaymentIntent(intent, { expectedDecimals: 6 })).valid).toBe(false)
+  })
+
+  it('accepts a fully pinned matching intent and rejects malformed expectations', async () => {
+    const intent = await makeIntent()
+    expect(await verifyPaymentIntent(intent, {
+      expectedAudience: merchant.address,
+      expectedReference: 'ORDER-2048',
+      expectedRecipientEvm: recipient.address,
+      expectedAsset: zeroAddress,
+      expectedAmount: parseUnits('12.5', 18).toString(),
+      expectedDecimals: 18,
+    })).toEqual({ valid: true })
+    expect((await verifyPaymentIntent(intent, { expectedAmount: 'not-a-number' })).valid).toBe(false)
+    expect((await verifyPaymentIntent(intent, { expectedAudience: '0x1234' })).valid).toBe(false)
+  })
+
   it('creates the canonical EIP-712 registry digest', async () => {
     const intent = await makeIntent()
     expect(hashPaymentIntent(intent)).toMatch(/^0x[0-9a-f]{64}$/)

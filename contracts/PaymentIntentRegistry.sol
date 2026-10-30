@@ -22,12 +22,18 @@ contract PaymentIntentRegistry {
     error MissingAnchor();
     error AlreadyRevoked();
 
+    /// @notice Anchors a digest, or refreshes the expiry of an existing live anchor.
+    /// @dev Revocation is final for a given digest: a signer cannot re-activate a revoked
+    ///      anchor by calling `anchor` again. Verifiers may therefore treat `revoked` as a
+    ///      monotonic signal. To restart the flow the signer issues a new intent with a new nonce.
     function anchor(bytes32 intentHash, uint64 expiresAt) external {
         if (intentHash == bytes32(0)) revert InvalidIntentHash();
         if (expiresAt <= block.timestamp || expiresAt > block.timestamp + MAX_LIFETIME) {
             revert InvalidExpiry();
         }
-        anchors[msg.sender][intentHash] = IntentAnchor(expiresAt, false);
+        IntentAnchor storage intent = anchors[msg.sender][intentHash];
+        if (intent.revoked) revert AlreadyRevoked();
+        intent.expiresAt = expiresAt;
         emit IntentAnchored(msg.sender, intentHash, expiresAt);
     }
 

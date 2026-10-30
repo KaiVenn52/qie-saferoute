@@ -48,3 +48,33 @@ Those commands remain estimates unless `QIE_BROADCAST=yes` is deliberately set. 
 6. the transaction can be recorded for the explorer and submission video.
 
 After a successful deployment, record the contract address, transaction hash, explorer link, commit SHA and frontend configuration. Do not claim deployment from console text alone; reopen the explorer and the public app independently.
+
+## Publishing the reference app
+
+The repository contains `.github/workflows/deploy-pages.yml`, which builds the app and publishes it with `actions/deploy-pages`. That action **requires** Settings → Pages → Source to be set to **"GitHub Actions"**.
+
+The initial site was published from `gh-pages`. The Payment Intent v2 release switches Pages to the GitHub Actions source so the validated `main` build is published automatically. A successful old branch deployment does not establish that the latest source is live.
+
+Choose one:
+
+1. **GitHub Actions source (preferred).** Set Pages → Source to "GitHub Actions". Pushing `main` then republishes automatically.
+2. **Branch source.** Delete the workflow and push a freshly built `dist/` to `gh-pages` manually.
+
+The site hostname follows the repository owner's username. If the account is renamed, the old `*.github.io` URL stops resolving and every published link must be updated.
+
+Registry addresses must be present at build time. Set `VITE_QIE_TESTNET_REGISTRY_ADDRESS` / `VITE_QIE_MAINNET_REGISTRY_ADDRESS` as repository variables so the workflow can inject them; otherwise the deployed bundle disables the on-chain controls permanently. The UI additionally checks for deployed bytecode before enabling anchor or revoke, so a mistyped or undeployed address fails closed.
+
+Finally, open the published URL in a private window and confirm the served bundle is the current build, not an earlier one. Comparing a distinctive string from the new build against the deployed JavaScript asset is a quick check.
+
+### Stale build output
+
+`npm run build` begins with `npm run clean`, which deletes `dist/` and `dist-sdk/`. This is required because Vite 8.2.1 (rolldown) does not currently honour `build.emptyOutDir` — verified by testing both the config option and the `--emptyOutDir` CLI flag — and `tsc` never removes output for deleted source files. Without the clean step, a branch-based `gh-pages` deploy keeps uploading superseded hashed bundles and a stale file can survive into the published npm package.
+
+Known environment caveat: on Windows with the repository inside a OneDrive-synced folder, Node's `fs.rmSync` was observed to return success without deleting anything, so `npm run clean` has no effect locally even though it exits 0. This was isolated to the OneDrive path — the same call works correctly in a normal directory and on the Ubuntu CI runner. If you build locally in a OneDrive folder, remove the output first:
+
+```powershell
+Remove-Item dist, dist-sdk -Recurse -Force
+npm run build
+```
+
+The GitHub Actions path is unaffected because each run starts from a fresh checkout.
